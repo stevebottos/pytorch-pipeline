@@ -45,117 +45,94 @@ ANNOS = os.path.join(ROOT, "Sparrowatch/Annotations")
 label_encodings = pascal_encode_labels(ANNOS)
 num_classes = len(label_encodings) + 1 # Add 1 for background
 
-"""
-The model will be:
-Object Detector: FasterRCNN (as opposed to SSD)
-Object Feature Extractor: Mobilenetv2
-"""
-backbone = torchvision.models.mobilenet_v2(pretrained=True).features
-backbone.out_channels = 1280
-#
-anchor_generator = AnchorGenerator(sizes=((32, 64, 128, 256, 512),),
-                                   aspect_ratios=((0.5, 1.0, 2.0),))
+def main():
+    """
+    Mobilenet backbone
+    With mobilenet, we can remove the FC layers easily by grabbing only the
+    "features" layers. Recall that we want to remove the FC layers so that
+    we can feed into the SSD for object detection rather than image classification
+    """
+    fullmodel = torchvision.models.mobilenet_v2(pretrained=True)
+    backbone = fullmodel.features
+    backbone.out_channels = 1280
+    """
+    Resnet backbone
+    With Resnet, we can't just grab "features" so we have to remove the FC
+    layer manually
+    """
+    # fullmodel = torchvision.models.resnet50(pretrained=True)
+    # backbone = torch.nn.Sequential(*(list(fullmodel.children())[:-1]))
+    # backbone.out_channels = 2048
 
-roi_pooler = torchvision.ops.MultiScaleRoIAlign(featmap_names=["0"],
-                                                output_size=7,
-                                                sampling_ratio=2)
+    anchor_generator = AnchorGenerator(sizes=((32, 64, 128, 256, 512),),
+                                       aspect_ratios=((0.5, 1.0, 2.0),))
 
-model = FasterRCNN(backbone,
-                   num_classes=num_classes,
-                   rpn_anchor_generator=anchor_generator,
-                   box_roi_pool=roi_pooler)
+    roi_pooler = torchvision.ops.MultiScaleRoIAlign(featmap_names=["0"],
+                                                    output_size=7,
+                                                    sampling_ratio=2)
+
+    model = FasterRCNN(backbone,
+                       num_classes=num_classes,
+                       rpn_anchor_generator=anchor_generator,
+                       box_roi_pool=roi_pooler)
 
 
-# use our dataset and defined transformations
-dataset = ObjectDetectionDataset(
-                imdir=IMAGES,
-                annodir=ANNOS,
-                label_encodings=label_encodings,
-                format="pascal",
-                transforms=get_transform(train=True))
+    # use our dataset and defined transformations
+    dataset = ObjectDetectionDataset(
+                    imdir=IMAGES,
+                    annodir=ANNOS,
+                    label_encodings=label_encodings,
+                    format="pascal",
+                    transforms=get_transform(train=True))
 
-dataset_test = ObjectDetectionDataset(
-                imdir=IMAGES,
-                annodir=ANNOS,
-                label_encodings=label_encodings,
-                format="pascal",
-                transforms=get_transform(train=False))
+    dataset_test = ObjectDetectionDataset(
+                    imdir=IMAGES,
+                    annodir=ANNOS,
+                    label_encodings=label_encodings,
+                    format="pascal",
+                    transforms=get_transform(train=False))
 
-# split the dataset in train and test set
-indices = torch.randperm(len(dataset)).tolist()
-train_val_split_point = int(len(indices) * 0.7)
-dataset = torch.utils.data.Subset(dataset, indices[:train_val_split_point])
-dataset_test = torch.utils.data.Subset(dataset_test, indices[train_val_split_point:])
+    # split the dataset in train and test set
+    indices = torch.randperm(len(dataset)).tolist()
+    train_val_split_point = int(len(indices) * 0.7)
+    dataset = torch.utils.data.Subset(dataset, indices[:train_val_split_point])
+    dataset_test = torch.utils.data.Subset(dataset_test, indices[train_val_split_point:])
 
-# define training and validation data loaders
-data_loader = torch.utils.data.DataLoader(
-    dataset, batch_size=1, shuffle=True, num_workers=1,
-    collate_fn=utils.collate_fn)
+    # define training and validation data loaders
+    data_loader = torch.utils.data.DataLoader(
+        dataset, batch_size=1, shuffle=True, num_workers=1,
+        collate_fn=utils.collate_fn)
 
-data_loader_test = torch.utils.data.DataLoader(
-    dataset_test, batch_size=1, shuffle=False, num_workers=1,
-    collate_fn=utils.collate_fn)
+    data_loader_test = torch.utils.data.DataLoader(
+        dataset_test, batch_size=1, shuffle=False, num_workers=1,
+        collate_fn=utils.collate_fn)
 
-# Move the model to the right device
-device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-print(device)
-model.to(device)
+    # Move the model to the right device
+    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+    print(device)
+    model.to(device)
 
-# Construct the optimizer
-params = [p for p in model.parameters() if p.requires_grad]
-optimizer = torch.optim.SGD(params, lr=0.005,
-                            momentum=0.9, weight_decay=0.0005)
+    # Construct the optimizer
+    params = [p for p in model.parameters() if p.requires_grad]
+    optimizer = torch.optim.SGD(params, lr=0.005,
+                                momentum=0.9, weight_decay=0.0005)
 
-# and a learning rate scheduler
-lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
-                                               step_size=3,
-                                               gamma=0.1)
+    # and a learning rate scheduler
+    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
+                                                   step_size=3,
+                                                   gamma=0.1)
 
-# let's train it for 10 epochs
-num_epochs = 10
+    # let's train it for 10 epochs
+    num_epochs = 10
 
-for epoch in range(num_epochs):
-    # train for one epoch, printing every 10 iterations
-    train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq=10)
-    # update the learning rate
-    lr_scheduler.step()
-    # evaluate on the test dataset
-    evaluate(model, data_loader_test, device=device)
+    for epoch in range(num_epochs):
+        # train for one epoch, printing every 10 iterations
+        train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq=10)
+        # update the learning rate
+        lr_scheduler.step()
+        # evaluate on the test dataset
+        evaluate(model, data_loader_test, device=device)
 
-#
-#
-# """
-# ******************* TRAINING *******************
-# """
-# device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-# """
-# ******************* SIMPLE PIPELINE TEST *******************
-# """
-# # dataset = hp.ObjectDetectionDataset(imdir=IMAGES,
-# #                                     annodir=ANNOS,
-# #                                     format="pascal",
-# #                                     transforms=hp.get_transform(train=True))
-# #
-# # data_loader = torch.utils.data.DataLoader(
-# #     dataset, batch_size=1, shuffle=True, num_workers=1,
-# #     collate_fn=utils.collate_fn)
-# #
-# # images,targets = next(iter(data_loader))
-# # images = list(image for image in images)
-# # targets = [{k: v for k, v in t.items()} for t in targets]
-# # output = model(images, targets)
-# # # For inference
-# # model.eval()
-# # x = [torch.rand(3, 300, 400), torch.rand(3, 500, 400)]
-# # predictions = model(x)
+
+if __name__ == "__main__":
+    main()
