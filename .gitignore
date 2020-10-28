@@ -1,3 +1,4 @@
 Sparrowatch/
 pycocotools/
 PythonAPI/
+__pycache__/

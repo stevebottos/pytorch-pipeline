@@ -4,7 +4,48 @@ import xml.etree.ElementTree as ET
 import torch
 import collections
 
+import references.detection.utils as utils
 import references.detection.transforms as T
+
+
+def make_dataset(images_path, annotations_path, train_fraction, format="pascal"):
+
+    if format == "pascal":
+        label_encodings = pascal_encode_labels(annotations_path)
+
+    num_classes = len(label_encodings) + 1 # Add 1 for background
+
+    dataset = ObjectDetectionDataset(
+                    imdir=images_path,
+                    annodir=annotations_path,
+                    label_encodings=label_encodings,
+                    format=format,
+                    transforms=get_transform(train=True))
+
+    dataset_test = ObjectDetectionDataset(
+                    imdir=images_path,
+                    annodir=annotations_path,
+                    label_encodings=label_encodings,
+                    format=format,
+                    transforms=get_transform(train=False))
+
+    # split the dataset in train and test set
+    indices = torch.randperm(len(dataset)).tolist()
+    train_val_split_point = int(len(indices) * train_fraction)
+    dataset = torch.utils.data.Subset(dataset, indices[:train_val_split_point])
+    dataset_test = torch.utils.data.Subset(dataset_test, indices[train_val_split_point:])
+
+    # define training and validation data loaders
+    data_loader = torch.utils.data.DataLoader(
+        dataset, batch_size=1, shuffle=True, num_workers=1,
+        collate_fn=utils.collate_fn)
+
+    data_loader_test = torch.utils.data.DataLoader(
+        dataset_test, batch_size=1, shuffle=False, num_workers=1,
+        collate_fn=utils.collate_fn)
+
+    return data_loader, data_loader_test, num_classes
+
 
 def get_transform(train):
     transforms = []
