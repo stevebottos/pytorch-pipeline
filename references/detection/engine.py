@@ -21,8 +21,6 @@ from SSD.SSD_sgrvinod.model import MultiBoxLoss
 from SSD.SSD_sgrvinod.utils import AverageMeter
 
 
-
-
 def train_one_epoch_FRCNN(model, optimizer, data_loader, device, epoch, print_freq):
     model.train()
     metric_logger = utils.MetricLogger(delimiter="  ")
@@ -82,7 +80,7 @@ def _get_iou_types(model):
 
 
 @torch.no_grad()
-def evaluate(model, data_loader, device):
+def evaluate_FRCNN(model, data_loader, device):
     n_threads = torch.get_num_threads()
     # FIXME remove this and make paste_masks_in_image run on the GPU
     torch.set_num_threads(1)

@@ -48,8 +48,8 @@ def train(config):
                                          device=device,
                                          print_freq=1)
 
-    elif framework == "SSD300":
-        pipeline = pp.PipelineSSD300(num_epochs=10,
+    elif framework == "SSD":
+        pipeline = pp.PipelineSSD(num_epochs=10,
                                          model=model,
                                          lr=lr, momentum=momentum, weight_decay=weight_decay,
                                          data_loader=data_loader,
@@ -61,7 +61,7 @@ def train(config):
 if __name__ == "__main__":
     # This will be passed in through the CLI/NB/desktop
     config = {
-    "framework" : "SSD300",
+    "framework" : "SSD",
     "basemodel" : "resnet50",
     "lr" : 0.005,
     "momentum" : 0.9,

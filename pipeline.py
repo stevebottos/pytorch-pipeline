@@ -1,10 +1,9 @@
 import torch
 
 # FasterRCNN Imports
-from references.detection.engine import train_one_epoch_FRCNN, evaluate
+from references.detection.engine import train_one_epoch_FRCNN, train_one_epoch_SSD, evaluate_FRCNN
 
 # SSD Imports
-from references.detection.engine import train_one_epoch_SSD, evaluate
 from SSD.SSD_nvidia.src.utils import dboxes300_coco, Encoder
 from SSD.SSD_nvidia.src.train import tencent_trick
 from SSD.SSD_nvidia.src.model import Loss
@@ -57,7 +56,7 @@ class PipelineFasterRCNN():
                      device=device)
 
 
-class PipelineSSD300():
+class PipelineSSD():
     def __init__(self,
                 num_epochs,
                 model,
@@ -117,7 +116,15 @@ class PipelineSSD300():
                                 std,
                                 self.device)
 
-            # lr_scheduler.step()
+            lr_scheduler.step()
+            # acc = evaluate(self.model, 
+            #                 self.data_loader_test, 
+            #                 cocoGt, encoder, 
+            #                 inv_map, 
+            #                 args)
+            # evaluate(self.model,
+            #          self.data_loader_test,
+            #          device=self.device)
 
 
 

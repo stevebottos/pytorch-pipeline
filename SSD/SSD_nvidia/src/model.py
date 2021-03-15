@@ -21,7 +21,7 @@ from SSD.SSD_sgrvinod.utils import *
 import numpy as np
 
 
-class SSD300(nn.Module):
+class SSD(nn.Module):
     """
     This is an adaptation of Nvidia's SSD implementation, with additions from
     sgrvinod's implementation

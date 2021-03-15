@@ -1,5 +1,5 @@
 from torchvision.models.detection import FasterRCNN
-from SSD.SSD_nvidia.src.model import SSD300
+from SSD.SSD_nvidia.src.model import SSD
 
 def set_basemodel_in_framework(basemodel,
                                framework,
@@ -33,7 +33,7 @@ def set_basemodel_in_framework(basemodel,
                                rpn_anchor_generator=None,
                                box_roi_pool=None)
 
-        elif framework == "SSD300":
-            model = SSD300(basemodel, num_classes=num_classes)
+        elif framework == "SSD":
+            model = SSD(basemodel, num_classes=num_classes)
 
         return model
