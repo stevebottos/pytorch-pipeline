@@ -8,7 +8,12 @@ import references.detection.utils as utils
 import references.detection.transforms as T
 
 
-def make_dataset(images_path, annotations_path, train_fraction, format="pascal"):
+def make_dataset(images_path,
+                annotations_path,
+                train_batch_size,
+                val_batch_size,
+                train_fraction,
+                format="pascal"):
 
     if format == "pascal":
         label_encodings = pascal_encode_labels(annotations_path)
@@ -37,11 +42,11 @@ def make_dataset(images_path, annotations_path, train_fraction, format="pascal")
 
     # define training and validation data loaders
     data_loader = torch.utils.data.DataLoader(
-        dataset, batch_size=1, shuffle=True, num_workers=1,
+        dataset, batch_size=train_batch_size, shuffle=True, num_workers=1,
         collate_fn=utils.collate_fn)
 
     data_loader_test = torch.utils.data.DataLoader(
-        dataset_test, batch_size=1, shuffle=False, num_workers=1,
+        dataset_test, batch_size=val_batch_size, shuffle=False, num_workers=1,
         collate_fn=utils.collate_fn)
 
     return data_loader, data_loader_test, num_classes

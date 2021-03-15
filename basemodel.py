@@ -37,9 +37,9 @@ def resnet50(framework):
         fullmodel = models.resnet50(pretrained=True)
         backbone = torch.nn.Sequential(*(list(fullmodel.children())[:-1]))
         backbone.out_channels = 2048
+
     elif framework == "SSD300":
         backbone = ResNetSSD(backbone='resnet50')
-
 
     return backbone
 
@@ -58,7 +58,7 @@ class ResNetSSD(nn.Module):
         elif backbone == 'resnet101':
             backbone = models.resnet101(pretrained=True)
             self.out_channels = [1024, 512, 512, 256, 256, 256]
-        else:  # backbone == 'resnet152':
+        else:  
             backbone = models.resnet152(pretrained=True)
             self.out_channels = [1024, 512, 512, 256, 256, 256]
         if backbone_path:
